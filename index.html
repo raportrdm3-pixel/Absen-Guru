@@ -1,906 +1,523 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0f172a">
-  <title>Scanner QR E-Absensi</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>E-Absensi Scanner</title>
   <style>
+    :root {
+      --primary: #2563eb;
+      --success: #059669;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #eef2f7;
-      color: #111827;
-      font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+      padding: 16px;
     }
-    .wrap {
-      width: min(720px, 100%);
+    .container {
+      max-width: 480px;
       margin: 0 auto;
-      padding: 16px 12px 40px;
     }
     .card {
-      background: #fff;
+      background: var(--card);
       border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 14px;
-      box-shadow: 0 4px 18px rgba(15, 23, 42, .07);
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
     }
-    h1 { font-size: 22px; margin-bottom: 4px; }
-    h2 { font-size: 16px; margin-bottom: 12px; color: #1e293b; }
-    .muted { color: #64748b; font-size: 13px; line-height: 1.5; }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
     label {
       display: block;
-      margin: 12px 0 5px;
-      font-size: 12px;
-      font-weight: 700;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: .3px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
     }
-    input, select {
+    input[type="text"] {
       width: 100%;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 11px;
-      padding: 12px 14px;
-      font-size: 15px;
-      background: #fff;
+      padding: 14px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 16px;
       outline: none;
-      transition: border-color .2s, box-shadow .2s;
+      transition: border-color 0.2s;
     }
-    input:focus, select:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, .13);
+    input[type="text"]:focus {
+      border-color: var(--primary);
     }
-    .buttons {
+    .btn-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-top: 14px;
     }
     button {
-      border: 0;
-      border-radius: 11px;
-      padding: 13px 14px;
-      font-size: 14px;
-      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
-      transition: opacity .15s, transform .1s;
+      transition: opacity 0.2s;
     }
-    button:active { transform: scale(.97); }
-    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
-    .primary { background: #2563eb; color: #fff; }
-    .secondary { background: #e2e8f0; color: #1e293b; }
-    .danger { background: #dc2626; color: #fff; }
-    .success { background: #059669; color: #fff; }
-    .emerald { background: #059669; color: #fff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-secondary { background: #e2e8f0; color: #1e293b; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+
     .status {
-      margin-top: 12px;
-      padding: 11px 13px;
-      border-radius: 10px;
-      background: #eff6ff;
-      color: #1e3a8a;
-      font-size: 13px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
       line-height: 1.5;
+      display: none;
     }
+    .status.show { display: block; }
+    .status.info { background: #eff6ff; color: #1e40af; }
     .status.ok { background: #ecfdf5; color: #065f46; }
-    .status.error { background: #fef2f2; color: #991b1b; }
     .status.warn { background: #fffbeb; color: #92400e; }
-    .camera {
+    .status.error { background: #fef2f2; color: #991b1b; }
+
+    .raw-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #0f172a;
+      color: #94a3b8;
+      border-radius: 10px;
+      font-family: monospace;
+      font-size: 13px;
+      word-break: break-all;
+      display: none;
+    }
+    .raw-box.show { display: block; }
+    .raw-box strong { color: #38bdf8; }
+
+    .camera-box {
       position: relative;
-      overflow: hidden;
       width: 100%;
-      aspect-ratio: 4 / 3;
+      aspect-ratio: 4/3;
       background: #0f172a;
       border-radius: 14px;
-      margin-bottom: 12px;
+      overflow: hidden;
+      margin-top: 12px;
+      display: none;
+    }
+    .camera-box.active { display: block; }
+    #reader {
+      width: 100%;
+      height: 100%;
     }
     video {
-      display: block;
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-    .corner {
-      position: absolute;
-      inset: 16% 14%;
-      border: 2.5px solid rgba(255,255,255,.85);
-      border-radius: 12px;
-      pointer-events: none;
-    }
-    .scan-line {
-      position: absolute;
-      left: 14%; right: 14%;
-      top: 50%;
-      height: 2px;
-      background: rgba(99,102,241,.9);
-      box-shadow: 0 0 12px rgba(99,102,241,.8);
-      animation: scan 2s infinite ease-in-out;
-      pointer-events: none;
-    }
-    @keyframes scan {
-      0%, 100% { transform: translateY(-100px); opacity: .9; }
-      50% { transform: translateY(100px); opacity: .5; }
-    }
-    .result {
-      display: none;
-      margin-top: 12px;
-      padding: 15px;
-      border-radius: 12px;
-      background: #ecfdf5;
-      border: 1px solid #a7f3d0;
-    }
-    .result.error {
-      background: #fef2f2;
-      border-color: #fecaca;
-    }
-    .result .name { font-size: 20px; font-weight: 800; margin-bottom: 5px; }
-    .result .type {
-      display: inline-block;
-      margin-bottom: 7px;
-      padding: 3px 9px;
-      border-radius: 999px;
-      background: #dbeafe;
-      color: #1e40af;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .result .line { margin-top: 3px; font-size: 13px; color: #334155; }
-    .small { margin-top: 8px; color: #64748b; font-size: 12px; line-height: 1.5; }
-    .manual {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    .omni-box {
+
+    .result-box {
       margin-top: 14px;
-      padding: 14px;
-      background: #ecfdf5;
-      border: 1.5px solid #6ee7b7;
-      border-radius: 13px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      display: none;
     }
-    .omni-box .title {
-      font-size: 13px;
+    .result-box.show { display: block; }
+    .result-box .name {
+      font-size: 18px;
       font-weight: 700;
-      color: #065f46;
       margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
-    .omni-box input {
-      border-color: #6ee7b7;
-      font-family: ui-monospace, monospace;
-      font-weight: 700;
-      font-size: 15px;
-      margin-top: 8px;
+    .result-box .meta {
+      font-size: 13px;
+      color: var(--muted);
     }
-    .omni-box input:focus {
-      border-color: #059669;
-      box-shadow: 0 0 0 3px rgba(5, 150, 105, .15);
-    }
-    #omniStatus {
-      margin-top: 7px;
+
+    .hint {
       font-size: 12px;
-      font-weight: 600;
-      color: #047857;
-      min-height: 18px;
-    }
-    canvas { display: none; }
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 14px 0;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-    }
-    .divider::before, .divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: #e2e8f0;
-    }
-    @media (max-width: 520px) {
-      .wrap { padding: 10px 8px 28px; }
-      .card { padding: 14px; border-radius: 14px; }
-      .buttons { grid-template-columns: 1fr; }
-      .manual { grid-template-columns: 1fr; }
-      h1 { font-size: 20px; }
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.4;
     }
   </style>
 </head>
 <body>
-<div class="wrap">
+  <div class="container">
+    <div class="card">
+      <h1>E-Absensi Scanner</h1>
+      <p class="subtitle">Kamera + Scanner VSC PB-333U</p>
 
-  <!-- Header -->
-  <div class="card">
-    <h1>📷 Scanner QR E-Absensi</h1>
-    <div class="muted">GitHub Pages → Google Apps Script → Spreadsheet</div>
-  </div>
+      <label>Scan Kartu (klik kotak ini dulu)</label>
+      <input
+        type="text"
+        id="omniScannerInput"
+        placeholder="Klik di sini lalu scan kartu..."
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      />
 
-  <!-- Pengaturan -->
-  <div class="card">
-    <h2>⚙️ Pengaturan Scanner</h2>
-    <label for="apiUrl">URL Web App Google Apps Script</label>
-    <input id="apiUrl" type="url"
-      placeholder="https://script.google.com/macros/s/XXXXXXXX/exec"
-      autocomplete="off">
-
-    <label for="scannerRole">Role Scanner (untuk kartu siswa)</label>
-    <select id="scannerRole">
-      <option value="guru">Guru</option>
-      <option value="admin">Admin</option>
-    </select>
-
-    <label for="scannerKelas">Kelas yang dipindai (kosongkan = semua)</label>
-    <input id="scannerKelas" type="text" placeholder="Contoh: 7A atau 7A,7B" autocomplete="off">
-
-    <div class="buttons">
-      <button class="primary" id="saveConfig">Simpan Pengaturan</button>
-      <button class="secondary" id="testApi">Tes Koneksi</button>
-    </div>
-    <div id="configStatus" class="status">Masukkan URL Apps Script lalu simpan.</div>
-    <div class="small">
-      QR Guru: <b>GURU|USERNAME</b> (alat scanner sering mengubah | menjadi I/J — sudah ditangani).<br>
-      QR Siswa: NISN angka (8–20 digit).
-    </div>
-  </div>
-
-  <!-- Scanner -->
-  <div class="card">
-    <h2>📷 Scanner</h2>
-
-    <!-- Kamera -->
-    <div class="camera">
-      <video id="video" playsinline muted></video>
-      <div class="corner"></div>
-      <div class="scan-line"></div>
-    </div>
-    <canvas id="canvas"></canvas>
-
-    <div class="buttons">
-      <button class="primary" id="startBtn">Mulai Kamera</button>
-      <button class="danger" id="stopBtn" disabled>Stop Kamera</button>
-    </div>
-    <div id="status" class="status">Kamera belum dimulai.</div>
-    <div id="result" class="result"></div>
-
-    <!-- Omni Scanner (VSC PB-333U) -->
-    <div class="omni-box">
-      <div class="title">
-        <span>📟</span>
-        <span>2D OMNI BARCODE SCANNER (VSC PB-333U)</span>
+      <div class="raw-box" id="rawBox">
+        <strong>Raw:</strong> <span id="rawText">-</span>
       </div>
-      <div class="small" style="margin:0 0 6px; color:#047857;">
-        Scan langsung — tidak perlu klik kotak. Scanner USB akan ditangkap otomatis di mana saja.
+
+      <div class="btn-row">
+        <button class="btn-primary" id="btnCamera">Buka Kamera</button>
+        <button class="btn-secondary" id="btnStopCamera" disabled>Stop Kamera</button>
       </div>
-      <input id="omniInput" type="text"
-        placeholder="Scan langsung di sini (opsional)"
-        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-      <div id="omniStatus">Siap menerima scan dari alat...</div>
-      <button class="emerald" id="omniManualBtn" style="width:100%; margin-top:8px; padding:10px;">
-        Proses Manual (jika ENTER tidak otomatis)
-      </button>
-    </div>
 
-    <div class="divider">atau</div>
+      <div class="camera-box" id="cameraBox">
+        <div id="reader"></div>
+      </div>
 
-    <!-- Manual -->
-    <div class="manual">
-      <input id="manualQr" type="text" placeholder="Tes manual: GURU|NURULHIDAYAH atau NISN">
-      <button class="success" id="manualBtn">Proses</button>
+      <div class="status info" id="statusBox">Siap scan. Fokuskan ke kotak input di atas.</div>
+
+      <div class="result-box" id="resultBox">
+        <div class="name" id="resultName">-</div>
+        <div class="meta" id="resultMeta">-</div>
+      </div>
+
+      <p class="hint">
+        Tips VSC PB-333U: pastikan kotak input berwarna biru (fokus), lalu scan.
+        Kalau masih salah, lihat teks "Raw" di atas untuk diagnosis.
+      </p>
     </div>
-    <div class="small">Contoh guru: <code>GURU|NURULHIDAYAH</code> · Contoh siswa: <code>0012345678</code></div>
   </div>
 
-</div>
+  <!-- html5-qrcode library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-<script>
-(() => {
-  "use strict";
+  <script>
+    // =====================================================
+    // GANTI URL INI DENGAN WEB APP GOOGLE APPS SCRIPT KAMU
+    // =====================================================
+    const GAS_URL = "https://script.google.com/macros/s/XXXXX/exec";
 
-  const $ = id => document.getElementById(id);
-  const STORAGE_KEY = "eabsensi_github_scanner_v3";
+    // =====================================================
+    // STATE
+    // =====================================================
+    let busy = false;
+    let html5QrCode = null;
+    let lastScanned = "";
+    let lastScanTime = 0;
 
-  let stream = null;
-  let scanning = false;
-  let busy = false;
-  let lastRaw = "";
-  let lastScanAt = 0;
-  let animationId = null;
-  let barcodeDetector = null;
-  let jsQrReady = false;
-
-  // ── Status helpers ──────────────────────────────────────────
-  function setStatus(message, type = "") {
-    const el = $("status");
-    el.textContent = message;
-    el.className = "status" + (type ? " " + type : "");
-  }
-  function setConfigStatus(message, type = "") {
-    const el = $("configStatus");
-    el.textContent = message;
-    el.className = "status" + (type ? " " + type : "");
-  }
-  function setOmniStatus(message, ok = true) {
-    const el = $("omniStatus");
-    if (!el) return;
-    el.textContent = message;
-    el.style.color = ok ? "#047857" : "#b45309";
-  }
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-  function showResult(html, error = false) {
-    const el = $("result");
-    el.style.display = "block";
-    el.className = "result" + (error ? " error" : "");
-    el.innerHTML = html;
-  }
-
-  // ── Config ──────────────────────────────────────────────────
-  function getApiUrl() {
-    const url = $("apiUrl").value.trim();
-    if (!url) throw new Error("URL Web App Google Apps Script belum diisi.");
-    if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/i.test(url)) {
-      throw new Error("URL harus berupa Web App yang berakhir /exec.");
+    // =====================================================
+    // HELPERS
+    // =====================================================
+    function setStatus(msg, type = "info") {
+      const el = document.getElementById("statusBox");
+      el.className = "status show " + type;
+      el.textContent = msg;
     }
-    return url;
-  }
-  function saveConfig(showMessage = true) {
-    const data = {
-      apiUrl: $("apiUrl").value.trim(),
-      scannerRole: $("scannerRole").value,
-      scannerKelas: $("scannerKelas").value.trim()
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    if (showMessage) setConfigStatus("✅ Pengaturan berhasil disimpan.", "ok");
-  }
-  function loadConfig() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data.apiUrl) $("apiUrl").value = data.apiUrl;
-      if (data.scannerRole) $("scannerRole").value = data.scannerRole;
-      if (data.scannerKelas) $("scannerKelas").value = data.scannerKelas;
-      setConfigStatus("Pengaturan tersimpan di browser ini.");
-    } catch (e) { console.warn(e); }
-  }
 
-  // ── JSONP ke Apps Script ────────────────────────────────────
-  function jsonp(params, timeout = 16000) {
-    return new Promise((resolve, reject) => {
-      let baseUrl;
-      try { baseUrl = getApiUrl(); }
-      catch (err) { reject(err); return; }
+    function showRaw(text) {
+      const box = document.getElementById("rawBox");
+      const span = document.getElementById("rawText");
+      span.textContent = text || "-";
+      box.classList.add("show");
+    }
 
-      const callbackName = "__eabsensi_cb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-      const script = document.createElement("script");
-      let finished = false;
+    function showResult(name, meta) {
+      const box = document.getElementById("resultBox");
+      document.getElementById("resultName").textContent = name;
+      document.getElementById("resultMeta").textContent = meta;
+      box.classList.add("show");
+    }
 
-      const cleanup = () => {
-        try { delete window[callbackName]; } catch (_) {}
-        script.remove();
-      };
-      const finishError = err => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timer);
-        cleanup();
-        reject(err);
-      };
+    function hideResult() {
+      document.getElementById("resultBox").classList.remove("show");
+    }
 
-      const timer = setTimeout(() => {
-        finishError(new Error("Timeout: Apps Script tidak menjawab. Cek URL /exec & deployment."));
-      }, timeout);
+    // =====================================================
+    // PARSER ROBUST (perbaikan IMAROH → MAROH)
+    // =====================================================
+    function parseQr(rawText) {
+      const raw = String(rawText || "").trim();
+      if (!raw) return { type: "unknown", raw: "" };
 
-      window[callbackName] = data => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timer);
-        cleanup();
-        resolve(data);
-      };
+      const compact = raw.replace(/\s+/g, "").toUpperCase();
 
-      const query = new URLSearchParams();
-      query.set("api", "1");
-      query.set("callback", callbackName);
-      Object.keys(params).forEach(key => {
-        const v = params[key];
-        if (v !== undefined && v !== null) query.set(key, String(v));
+      // ---------- GURU ----------
+      let username = null;
+
+      // 1. Format ideal: GURU|IMAROH
+      let m = compact.match(/^GURU\|(.+)$/);
+      if (m) username = m[1];
+
+      // 2. | berubah jadi : - =
+      if (!username) {
+        m = compact.match(/^GURU[:\-=](.+)$/);
+        if (m) username = m[1];
+      }
+
+      // 3. | berubah jadi I atau J → GURUIIMAROH atau GURUJIMAROH
+      if (!username) {
+        m = compact.match(/^GURU[IJ](.+)$/);
+        if (m) {
+          const after = m[1];                 // contoh: IMAROH atau MAROH
+          const alt = compact.slice(4);       // setelah "GURU" → IMAROH
+
+          // Prefer versi yang lebih panjang (menyimpan huruf pertama username)
+          if (alt.length > after.length) {
+            username = alt;
+          } else {
+            username = after;
+          }
+        }
+      }
+
+      // 4. Separator hilang total: GURUIMAROH
+      if (!username && compact.startsWith("GURU") && compact.length > 6) {
+        username = compact.slice(4);
+      }
+
+      if (username) {
+        username = username.replace(/[^A-Z0-9._-]/g, "");
+        if (username.length >= 3) {
+          return {
+            type: "guru",
+            username: username,
+            raw: raw
+          };
+        }
+      }
+
+      // ---------- SISWA (NISN) ----------
+      const digitsOnly = raw.replace(/\D/g, "");
+      if (/^\d{8,20}$/.test(digitsOnly)) {
+        return {
+          type: "siswa",
+          nisn: digitsOnly,
+          raw: raw
+        };
+      }
+
+      // Variasi NISN: 123... atau NISN|123...
+      m = raw.match(/NISN\s*(?:[:=|]\s*|\s+)(\d{8,20})/i);
+      if (m) {
+        return {
+          type: "siswa",
+          nisn: m[1],
+          raw: raw
+        };
+      }
+
+      return { type: "unknown", raw: raw };
+    }
+
+    // =====================================================
+    // JSONP (komunikasi ke Google Apps Script)
+    // =====================================================
+    function jsonp(params, timeout = 15000) {
+      return new Promise((resolve, reject) => {
+        const callbackName = "__eabsensi_cb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+        const script = document.createElement("script");
+        let finished = false;
+
+        const cleanup = () => {
+          try { delete window[callbackName]; } catch (_) {}
+          script.remove();
+        };
+
+        const finish = (err, data) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          cleanup();
+          if (err) reject(err);
+          else resolve(data);
+        };
+
+        const timer = setTimeout(() => {
+          finish(new Error("Timeout menghubungi server"));
+        }, timeout);
+
+        window[callbackName] = (data) => finish(null, data);
+
+        const qs = new URLSearchParams({ ...params, callback: callbackName });
+        script.src = GAS_URL + "?" + qs.toString();
+        script.onerror = () => finish(new Error("Gagal memuat script API"));
+        document.body.appendChild(script);
       });
-
-      script.onerror = () => finishError(new Error(
-        "Gagal menghubungi Apps Script. Periksa URL /exec dan pastikan deployment aktif."
-      ));
-      script.src = baseUrl + (baseUrl.includes("?") ? "&" : "?") + query.toString();
-      document.body.appendChild(script);
-    });
-  }
-
-  async function testApi() {
-    saveConfig(false);
-    setConfigStatus("⏳ Menguji koneksi...");
-    try {
-      const res = await jsonp({ action: "health" });
-      if (res && res.ok) {
-        setConfigStatus("✅ Terhubung. API E-Absensi aktif.", "ok");
-      } else {
-        setConfigStatus("❌ API menjawab tapi status tidak OK: " + ((res && res.error) || "unknown"), "error");
-      }
-    } catch (err) {
-      setConfigStatus("❌ " + err.message, "error");
-    }
-  }
-
-  // ── PARSER QR (toleran terhadap VSC PB-333U) ────────────────
-  /*
-   * Scanner USB sering mengubah karakter | menjadi I / J / hilang.
-   * Parser ini mendukung berbagai variasi yang muncul di lapangan.
-   */
-  function parseQr(rawText) {
-    const raw = String(rawText || "").trim();
-    if (!raw) return { type: "unknown", raw: "" };
-
-    const compact = raw.replace(/\s+/g, "");
-
-    // 1. Format G#username
-    let m = compact.match(/^G#(.+)$/i);
-    if (m) {
-      const username = m[1].replace(/[^a-zA-Z0-9._-]/g, "").trim();
-      if (username) return { type: "guru", username, raw };
     }
 
-    // 2. Diawali GURU + separator apapun (termasuk I/J yang sering menggantikan |)
-    // Contoh yang didukung:
-    //   GURU|NURULHIDAYAH
-    //   GURUINURULHIDAYAH
-    //   GURUJNURULHIDAYAH
-    //   GURU:NURULHIDAYAH
-    //   GURU-NURULHIDAYAH
-    //   GURUNURULHIDAYAH
-    m = compact.match(/^GURU([:|\-#IJ]*)(.+)$/i);
-    if (m) {
-      let rest = (m[2] || "").replace(/[^a-zA-Z0-9._-]/g, "").trim();
-      if (rest) return { type: "guru", username: rest, raw };
-    }
+    // =====================================================
+    // PROSES HASIL SCAN
+    // =====================================================
+    async function processQr(rawText) {
+      if (busy) return;
 
-    // 3. Variasi label lain
-    m = raw.match(/^(?:GURU|USERNAME|USER)\s*[:=]\s*([a-zA-Z0-9._-]+)$/i);
-    if (m) return { type: "guru", username: m[1].trim(), raw };
+      // Debounce (hindari double scan)
+      const now = Date.now();
+      if (rawText === lastScanned && now - lastScanTime < 2500) return;
+      lastScanned = rawText;
+      lastScanTime = now;
 
-    // 4. Format siswa — NISN angka murni
-    const digitsOnly = raw.replace(/\D/g, "");
-    if (/^\d{8,20}$/.test(digitsOnly)) {
-      return { type: "siswa", nisn: digitsOnly, raw };
-    }
+      showRaw(rawText);
+      const parsed = parseQr(rawText);
 
-    // 5. Variasi "NISN: 123..." / "NISN|123..."
-    m = raw.match(/NISN\s*(?:[:=|]\s*|\s+)(\d{8,20})/i);
-    if (m) return { type: "siswa", nisn: m[1], raw };
-
-    return { type: "unknown", raw };
-  }
-
-  // ── Proses hasil scan ───────────────────────────────────────
-  async function processQr(rawText) {
-    if (busy) return;
-
-    const parsed = parseQr(rawText);
-
-    if (parsed.type === "unknown") {
-      setStatus("⚠️ QR terbaca, tapi format bukan Guru atau NISN siswa.", "warn");
-      showResult(
-        "<div class='name'>QR Terbaca</div>" +
-        "<div class='line'>Isi QR: <b>" + escapeHtml(parsed.raw) + "</b></div>" +
-        "<div class='small'>Format guru: GURU|USERNAME · Format siswa: NISN angka</div>",
-        true
-      );
-      return;
-    }
-
-    const now = Date.now();
-    const uniqueCode = parsed.type + "|" + (parsed.username || parsed.nisn || "");
-    if (uniqueCode === lastRaw && now - lastScanAt < 4500) return; // cegah double
-
-    lastRaw = uniqueCode;
-    lastScanAt = now;
-    busy = true;
-
-    try {
-      if (parsed.type === "guru") {
-        await processGuru(parsed.username);
-      } else {
-        await processSiswa(parsed.nisn);
-      }
-    } catch (err) {
-      setStatus("❌ " + err.message, "error");
-      showResult(
-        "<div class='name'>❌ Gagal</div>" +
-        "<div class='line'>" + escapeHtml(err.message) + "</div>",
-        true
-      );
-    } finally {
-      setTimeout(() => { busy = false; }, 900);
-    }
-  }
-
-  async function processGuru(username) {
-    setStatus("🔎 QR Guru terbaca → " + username + " ...");
-    showResult(
-      "<span class='type'>KARTU GURU</span>" +
-      "<div class='name'>" + escapeHtml(username) + "</div>" +
-      "<div class='line'>Menyimpan absensi guru...</div>"
-    );
-
-    const response = await jsonp({
-      action: "scanAbsensiGuru",
-      username: username
-    });
-
-    if (!response || !response.ok) {
-      throw new Error((response && response.error) || "API gagal memproses absensi guru.");
-    }
-
-    const data = response.data || {};
-    if (data.success === false) {
-      throw new Error(data.message || data.error || "Absensi guru tidak berhasil.");
-    }
-
-    const nama = data.nama || username;
-    const jam = data.jam || data.jamDatang || data.jamPulang || "";
-    const message = data.message || data.msg || "Absensi guru berhasil.";
-
-    showResult(
-      "<span class='type'>KARTU GURU</span>" +
-      "<div class='name'>✅ " + escapeHtml(nama) + "</div>" +
-      "<div class='line'><b>Username:</b> " + escapeHtml(username) + "</div>" +
-      (jam ? "<div class='line'><b>Jam:</b> " + escapeHtml(jam) + "</div>" : "") +
-      "<div class='line' style='margin-top:7px'>" + escapeHtml(message) + "</div>"
-    );
-    setStatus("✅ Absensi guru berhasil dikirim.", "ok");
-  }
-
-  async function processSiswa(nisn) {
-    setStatus("🔎 QR Siswa terbaca → NISN " + nisn + " ...");
-    showResult(
-      "<span class='type'>KARTU SISWA</span>" +
-      "<div class='name'>NISN " + escapeHtml(nisn) + "</div>" +
-      "<div class='line'>Memeriksa data siswa...</div>"
-    );
-
-    const lookup = await jsonp({ action: "lookupSiswaForScan", nisn: nisn });
-    if (!lookup || !lookup.ok) {
-      throw new Error((lookup && lookup.error) || "Data siswa tidak ditemukan.");
-    }
-
-    const siswa = lookup.data;
-    if (!siswa || siswa.success === false) {
-      throw new Error((siswa && siswa.message) || "NISN tidak ditemukan di database.");
-    }
-
-    const nama = siswa.nama || siswa.NAMA || "-";
-    const kelas = siswa.kelas || siswa.KELAS || "-";
-
-    showResult(
-      "<span class='type'>KARTU SISWA</span>" +
-      "<div class='name'>" + escapeHtml(nama) + "</div>" +
-      "<div class='line'><b>NISN:</b> " + escapeHtml(nisn) + "</div>" +
-      "<div class='line'><b>Kelas:</b> " + escapeHtml(kelas) + "</div>" +
-      "<div class='line' style='margin-top:7px'>Menyimpan absensi...</div>"
-    );
-
-    const scan = await jsonp({
-      action: "scanAbsensi",
-      nisn: nisn,
-      scannerRole: $("scannerRole").value.trim(),
-      scannerKelas: $("scannerKelas").value.trim()
-    });
-
-    if (!scan || !scan.ok) {
-      throw new Error((scan && scan.error) || "Gagal menyimpan absensi siswa.");
-    }
-
-    const data = scan.data || {};
-    if (data.success === false) {
-      throw new Error(data.message || data.error || "Absensi siswa tidak berhasil.");
-    }
-
-    const serverMessage = data.message || data.msg || "Absensi siswa berhasil.";
-    showResult(
-      "<span class='type'>KARTU SISWA</span>" +
-      "<div class='name'>✅ " + escapeHtml(nama) + "</div>" +
-      "<div class='line'><b>NISN:</b> " + escapeHtml(nisn) + "</div>" +
-      "<div class='line'><b>Kelas:</b> " + escapeHtml(kelas) + "</div>" +
-      "<div class='line' style='margin-top:7px'>" + escapeHtml(serverMessage) + "</div>"
-    );
-    setStatus("✅ Absensi siswa berhasil dikirim.", "ok");
-  }
-
-  // ── Omni Scanner (VSC PB-333U) — GLOBAL KEY BUFFER ──────────
-  // Scanner USB mengetik sangat cepat lalu Enter.
-  // Kita tangkap di level document, TIDAK perlu fokus ke input.
-  let lastOmniCode = "";
-  let lastOmniTime = 0;
-  let keyBuffer = "";
-  let keyBufferTimer = null;
-  const KEY_BUFFER_TIMEOUT = 80; // ms — jeda antar karakter scanner biasanya < 50ms
-
-  function focusOmni() {
-    const input = $("omniInput");
-    if (!input) return;
-    try { input.focus({ preventScroll: true }); } catch (e) { try { input.focus(); } catch (_) {} }
-    try { input.select(); } catch (_) {}
-  }
-
-  function handleOmniResult(raw) {
-    const code = String(raw || "").trim();
-    if (code.length < 3) {
-      setOmniStatus("⚠ Data terlalu pendek", false);
-      return;
-    }
-
-    const now = Date.now();
-    if (code === lastOmniCode && now - lastOmniTime < 1800) {
-      setOmniStatus("⚠ Scan ganda diabaikan", false);
-      return;
-    }
-    lastOmniCode = code;
-    lastOmniTime = now;
-
-    const input = $("omniInput");
-    if (input) input.value = "";
-    setOmniStatus("✓ Terbaca: " + code, true);
-    console.log("[OMNI] Hasil scan:", code);
-    processQr(code);
-  }
-
-  function initOmni() {
-    const input = $("omniInput");
-
-    // ── 1. GLOBAL keydown — tangkap ketikan scanner di mana saja ──
-    document.addEventListener("keydown", function (e) {
-      // Abaikan kalau user sedang mengetik di input teks biasa (manual / config)
-      const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : "";
-      const isTextField = (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
-      const isOmniField = e.target && e.target.id === "omniInput";
-
-      // Kalau fokus di input lain (bukan omni), biarkan user mengetik normal
-      if (isTextField && !isOmniField) {
-        // Tapi kalau di omniInput dan Enter → proses
+      if (parsed.type === "unknown") {
+        setStatus("⚠️ QR terbaca, tapi format tidak dikenali.\nRaw: " + rawText, "warn");
+        hideResult();
         return;
       }
 
-      // Enter = akhir data dari scanner
-      if (e.key === "Enter") {
-        if (keyBuffer.length >= 3) {
-          e.preventDefault();
-          e.stopPropagation();
-          const code = keyBuffer;
-          keyBuffer = "";
-          if (keyBufferTimer) { clearTimeout(keyBufferTimer); keyBufferTimer = null; }
-          handleOmniResult(code);
-        }
-        return;
-      }
+      busy = true;
+      setStatus("⏳ Memproses data...", "info");
+      hideResult();
 
-      // Karakter biasa dari scanner (abaikan tombol modifier saja)
-      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        // Jangan ganggu kalau user fokus di input lain
-        if (isTextField && !isOmniField) return;
-
-        keyBuffer += e.key;
-
-        // Reset timer — kalau lama tidak ada karakter lagi, buang buffer
-        if (keyBufferTimer) clearTimeout(keyBufferTimer);
-        keyBufferTimer = setTimeout(() => {
-          // Kalau buffer terlalu pendek setelah timeout, anggap bukan dari scanner
-          if (keyBuffer.length < 3) keyBuffer = "";
-          keyBufferTimer = null;
-        }, KEY_BUFFER_TIMEOUT);
-
-        // Tampilkan di kotak omni sebagai feedback visual
-        if (input) input.value = keyBuffer;
-      }
-    }, true); // useCapture = true agar menangkap lebih awal
-
-    // ── 2. Tetap dukung input omni secara normal ──
-    if (input) {
-      input.addEventListener("keydown", e => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          // Ambil dari input value (kalau user ketik manual)
-          const val = input.value.trim() || keyBuffer;
-          keyBuffer = "";
-          handleOmniResult(val);
-        }
-      });
-
-      input.addEventListener("change", () => {
-        if (input.value.trim().length >= 3) {
-          handleOmniResult(input.value);
-        }
-      });
-    }
-
-    if ($("omniManualBtn")) {
-      $("omniManualBtn").addEventListener("click", () => {
-        const val = (input && input.value.trim()) || keyBuffer;
-        keyBuffer = "";
-        handleOmniResult(val);
-      });
-    }
-
-    // Auto fokus awal (opsional, tidak wajib lagi)
-    setTimeout(focusOmni, 500);
-    setOmniStatus("Siap — scan langsung tanpa klik kotak", true);
-  }
-
-  // ── Kamera ──────────────────────────────────────────────────
-  async function loadJsQr() {
-    if (window.jsQR) { jsQrReady = true; return; }
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
-      s.onload = resolve;
-      s.onerror = () => reject(new Error("Library QR gagal dimuat."));
-      document.head.appendChild(s);
-    });
-    jsQrReady = !!window.jsQR;
-  }
-
-  async function setupDetector() {
-    if ("BarcodeDetector" in window) {
       try {
-        const formats = await BarcodeDetector.getSupportedFormats();
-        if (formats.includes("qr_code")) {
-          barcodeDetector = new BarcodeDetector({ formats: ["qr_code"] });
-          return "barcode";
+        let response;
+
+        if (parsed.type === "guru") {
+          setStatus("⏳ Absensi Guru: " + parsed.username + " ...", "info");
+          response = await jsonp({
+            action: "scanAbsensiGuru",
+            username: parsed.username
+          });
+        } else {
+          setStatus("⏳ Absensi Siswa NISN: " + parsed.nisn + " ...", "info");
+          response = await jsonp({
+            action: "scanAbsensiSiswa",
+            nisn: parsed.nisn
+          });
         }
-      } catch (e) { console.warn(e); }
-    }
-    await loadJsQr();
-    return "jsqr";
-  }
 
-  async function startScanner() {
-    if (scanning) return;
-    try { getApiUrl(); }
-    catch (err) {
-      setStatus("❌ " + err.message, "error");
-      setConfigStatus("❌ " + err.message, "error");
-      return;
-    }
-    saveConfig(false);
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setStatus("❌ Browser tidak mendukung kamera.", "error");
-      return;
-    }
-
-    try {
-      setStatus("⏳ Menyiapkan kamera...");
-      const detectorType = await setupDetector();
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
-      $("video").srcObject = stream;
-      await $("video").play();
-
-      scanning = true;
-      busy = false;
-      lastRaw = "";
-      lastScanAt = 0;
-      $("startBtn").disabled = true;
-      $("stopBtn").disabled = false;
-
-      setStatus(
-        detectorType === "barcode"
-          ? "📷 Kamera aktif. Arahkan QR ke kotak."
-          : "📷 Kamera aktif (mode fallback). Arahkan QR ke kotak.",
-        "ok"
-      );
-      scanLoop(detectorType);
-    } catch (err) {
-      console.error(err);
-      stopScanner();
-      if (err && err.name === "NotAllowedError") {
-        setStatus("❌ Izin kamera ditolak. Izinkan kamera untuk situs ini.", "error");
-      } else {
-        setStatus("❌ Kamera gagal: " + (err.message || err), "error");
+        if (response && response.ok) {
+          setStatus("✅ " + (response.message || "Berhasil"), "ok");
+          showResult(
+            response.nama || (parsed.type === "guru" ? parsed.username : parsed.nisn),
+            response.keterangan || (parsed.type === "guru" ? "Guru" : "Siswa") + " • " + new Date().toLocaleTimeString("id-ID")
+          );
+        } else {
+          setStatus("❌ " + (response?.error || response?.message || "Gagal memproses"), "error");
+        }
+      } catch (err) {
+        setStatus("❌ " + err.message, "error");
+      } finally {
+        busy = false;
+        // Kembalikan fokus ke input scanner
+        setTimeout(() => {
+          document.getElementById("omniScannerInput").focus();
+          document.getElementById("omniScannerInput").value = "";
+        }, 300);
       }
     }
-  }
 
-  async function scanLoop(detectorType) {
-    if (!scanning) return;
-    try {
-      const video = $("video");
-      if (video.readyState >= 2 && !busy) {
-        if (detectorType === "barcode" && barcodeDetector) {
-          const codes = await barcodeDetector.detect(video);
-          if (codes && codes.length) {
-            const text = codes[0].rawValue || "";
-            if (text) await processQr(text);
-          }
-        } else if (detectorType === "jsqr" && jsQrReady) {
-          const canvas = $("canvas");
-          const w0 = video.videoWidth, h0 = video.videoHeight;
-          if (w0 && h0) {
-            const maxW = 900;
-            const scale = Math.min(1, maxW / w0);
-            const w = Math.round(w0 * scale);
-            const h = Math.round(h0 * scale);
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-            ctx.drawImage(video, 0, 0, w, h);
-            const imageData = ctx.getImageData(0, 0, w, h);
-            const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
-              inversionAttempts: "attemptBoth"
-            });
-            if (code && code.data) await processQr(code.data);
-          }
+    // =====================================================
+    // HARDWARE SCANNER (VSC PB-333U) - Keyboard Wedge
+    // =====================================================
+    const input = document.getElementById("omniScannerInput");
+
+    // Selalu fokuskan input
+    function keepFocus() {
+      if (document.activeElement !== input) {
+        input.focus();
+      }
+    }
+    setInterval(keepFocus, 800);
+    input.focus();
+
+    // Saat user menekan Enter (terminator scanner)
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (val) {
+          processQr(val);
+          input.value = "";
         }
       }
-    } catch (err) {
-      console.warn("Frame error:", err);
-    }
-    if (scanning) {
-      animationId = requestAnimationFrame(() => scanLoop(detectorType));
-    }
-  }
+    });
 
-  function stopScanner() {
-    scanning = false;
-    if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-    }
-    $("video").srcObject = null;
-    $("startBtn").disabled = false;
-    $("stopBtn").disabled = true;
-    setStatus("Kamera dihentikan.");
-  }
+    // Cadangan: jika scanner tidak kirim Enter
+    let bufferTimer = null;
+    input.addEventListener("input", () => {
+      clearTimeout(bufferTimer);
+      bufferTimer = setTimeout(() => {
+        const val = input.value.trim();
+        if (val.length >= 5) {
+          processQr(val);
+          input.value = "";
+        }
+      }, 400);
+    });
 
-  // ── Event binding ───────────────────────────────────────────
-  $("saveConfig").addEventListener("click", () => {
-    try { getApiUrl(); saveConfig(true); }
-    catch (err) { setConfigStatus("❌ " + err.message, "error"); }
-  });
-  $("testApi").addEventListener("click", testApi);
-  $("startBtn").addEventListener("click", startScanner);
-  $("stopBtn").addEventListener("click", stopScanner);
+    // =====================================================
+    // KAMERA
+    // =====================================================
+    const btnCamera = document.getElementById("btnCamera");
+    const btnStopCamera = document.getElementById("btnStopCamera");
+    const cameraBox = document.getElementById("cameraBox");
 
-  $("manualBtn").addEventListener("click", async () => {
-    const value = $("manualQr").value.trim();
-    if (!value) { setStatus("Masukkan isi QR untuk pengujian.", "warn"); return; }
-    await processQr(value);
-  });
-  $("manualQr").addEventListener("keydown", e => {
-    if (e.key === "Enter") $("manualBtn").click();
-  });
+    btnCamera.addEventListener("click", async () => {
+      try {
+        if (html5QrCode) {
+          await html5QrCode.stop();
+          html5QrCode = null;
+        }
 
-  window.addEventListener("beforeunload", stopScanner);
+        cameraBox.classList.add("active");
+        btnCamera.disabled = true;
+        btnStopCamera.disabled = false;
+        setStatus("📷 Kamera aktif. Arahkan ke QR code...", "info");
 
-  // Init
-  loadConfig();
-  initOmni();
-})();
-</script>
+        html5QrCode = new Html5Qrcode("reader");
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          (decodedText) => {
+            processQr(decodedText);
+          },
+          () => {}
+        );
+      } catch (err) {
+        setStatus("❌ Tidak bisa membuka kamera: " + err.message, "error");
+        cameraBox.classList.remove("active");
+        btnCamera.disabled = false;
+        btnStopCamera.disabled = true;
+      }
+    });
+
+    btnStopCamera.addEventListener("click", async () => {
+      try {
+        if (html5QrCode) {
+          await html5QrCode.stop();
+          html5QrCode = null;
+        }
+      } catch (_) {}
+      cameraBox.classList.remove("active");
+      btnCamera.disabled = false;
+      btnStopCamera.disabled = true;
+      setStatus("Kamera dimatikan. Siap scan dengan alat.", "info");
+      input.focus();
+    });
+
+    // =====================================================
+    // INIT
+    // =====================================================
+    setStatus("Siap. Klik kotak input lalu scan kartu guru/siswa.", "info");
+  </script>
 </body>
 </html>
