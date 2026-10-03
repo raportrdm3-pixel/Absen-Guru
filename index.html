@@ -276,10 +276,10 @@
         <span>2D OMNI BARCODE SCANNER (VSC PB-333U)</span>
       </div>
       <div class="small" style="margin:0 0 6px; color:#047857;">
-        Klik kotak di bawah, lalu scan kartu guru/siswa. Scanner akan mengetik + Enter otomatis.
+        Scan langsung — tidak perlu klik kotak. Scanner USB akan ditangkap otomatis di mana saja.
       </div>
       <input id="omniInput" type="text"
-        placeholder="Klik di sini lalu scan..."
+        placeholder="Scan langsung di sini (opsional)"
         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <div id="omniStatus">Siap menerima scan dari alat...</div>
       <button class="emerald" id="omniManualBtn" style="width:100%; margin-top:8px; padding:10px;">
@@ -625,9 +625,14 @@
     setStatus("✅ Absensi siswa berhasil dikirim.", "ok");
   }
 
-  // ── Omni Scanner (VSC PB-333U) ──────────────────────────────
+  // ── Omni Scanner (VSC PB-333U) — GLOBAL KEY BUFFER ──────────
+  // Scanner USB mengetik sangat cepat lalu Enter.
+  // Kita tangkap di level document, TIDAK perlu fokus ke input.
   let lastOmniCode = "";
   let lastOmniTime = 0;
+  let keyBuffer = "";
+  let keyBufferTimer = null;
+  const KEY_BUFFER_TIMEOUT = 80; // ms — jeda antar karakter scanner biasanya < 50ms
 
   function focusOmni() {
     const input = $("omniInput");
@@ -651,35 +656,92 @@
     lastOmniCode = code;
     lastOmniTime = now;
 
-    $("omniInput").value = "";
+    const input = $("omniInput");
+    if (input) input.value = "";
     setOmniStatus("✓ Terbaca: " + code, true);
+    console.log("[OMNI] Hasil scan:", code);
     processQr(code);
-    setTimeout(focusOmni, 500);
   }
 
   function initOmni() {
     const input = $("omniInput");
-    if (!input) return;
 
-    input.addEventListener("keydown", e => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleOmniResult(input.value);
+    // ── 1. GLOBAL keydown — tangkap ketikan scanner di mana saja ──
+    document.addEventListener("keydown", function (e) {
+      // Abaikan kalau user sedang mengetik di input teks biasa (manual / config)
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : "";
+      const isTextField = (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT");
+      const isOmniField = e.target && e.target.id === "omniInput";
+
+      // Kalau fokus di input lain (bukan omni), biarkan user mengetik normal
+      if (isTextField && !isOmniField) {
+        // Tapi kalau di omniInput dan Enter → proses
+        return;
       }
-    });
 
-    input.addEventListener("change", () => {
-      if (input.value.trim().length >= 3) handleOmniResult(input.value);
-    });
+      // Enter = akhir data dari scanner
+      if (e.key === "Enter") {
+        if (keyBuffer.length >= 3) {
+          e.preventDefault();
+          e.stopPropagation();
+          const code = keyBuffer;
+          keyBuffer = "";
+          if (keyBufferTimer) { clearTimeout(keyBufferTimer); keyBufferTimer = null; }
+          handleOmniResult(code);
+        }
+        return;
+      }
 
-    input.addEventListener("click", focusOmni);
+      // Karakter biasa dari scanner (abaikan tombol modifier saja)
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        // Jangan ganggu kalau user fokus di input lain
+        if (isTextField && !isOmniField) return;
 
-    $("omniManualBtn").addEventListener("click", () => {
-      handleOmniResult(input.value);
-    });
+        keyBuffer += e.key;
 
-    // Auto-fokus saat halaman siap
-    setTimeout(focusOmni, 700);
+        // Reset timer — kalau lama tidak ada karakter lagi, buang buffer
+        if (keyBufferTimer) clearTimeout(keyBufferTimer);
+        keyBufferTimer = setTimeout(() => {
+          // Kalau buffer terlalu pendek setelah timeout, anggap bukan dari scanner
+          if (keyBuffer.length < 3) keyBuffer = "";
+          keyBufferTimer = null;
+        }, KEY_BUFFER_TIMEOUT);
+
+        // Tampilkan di kotak omni sebagai feedback visual
+        if (input) input.value = keyBuffer;
+      }
+    }, true); // useCapture = true agar menangkap lebih awal
+
+    // ── 2. Tetap dukung input omni secara normal ──
+    if (input) {
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          // Ambil dari input value (kalau user ketik manual)
+          const val = input.value.trim() || keyBuffer;
+          keyBuffer = "";
+          handleOmniResult(val);
+        }
+      });
+
+      input.addEventListener("change", () => {
+        if (input.value.trim().length >= 3) {
+          handleOmniResult(input.value);
+        }
+      });
+    }
+
+    if ($("omniManualBtn")) {
+      $("omniManualBtn").addEventListener("click", () => {
+        const val = (input && input.value.trim()) || keyBuffer;
+        keyBuffer = "";
+        handleOmniResult(val);
+      });
+    }
+
+    // Auto fokus awal (opsional, tidak wajib lagi)
+    setTimeout(focusOmni, 500);
+    setOmniStatus("Siap — scan langsung tanpa klik kotak", true);
   }
 
   // ── Kamera ──────────────────────────────────────────────────
